@@ -92,5 +92,4 @@ vocab_data.json
 generate_vocab.py
 populate_vocab.py
 populate_embedding.py
-populate_pinyin.py
 test.py

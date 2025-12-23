@@ -1,12 +1,10 @@
 # api/urls.py
-from django.urls import path
-from django.urls import re_path
+from django.urls import path, re_path, include
 from . import views
 
 urlpatterns = [
-    path('login/', views.login_view, name='login_view'),
-    path('logout/', views.logout_view, name='logout_view'),
-    path('register/', views.register, name='register'),
+    path('auth/', include('dj_rest_auth.urls')),  # login, logout, password reset
+    path('auth/registration/', include('dj_rest_auth.registration.urls')),  # register
     path('user_profile_view/', views.user_profile_view, name='user_profile_view'),
     path('get-csrf-token/', views.get_csrf_token, name='get-csrf-token'),
     path('get-ws-token/', views.get_ws_token, name='get_ws_token'),

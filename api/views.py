@@ -491,31 +491,6 @@ def payment_cancel_view(request):
 # ===================================================================================
 # Template related start
 # ===================================================================================
-@api_view(['POST'])
-@permission_classes([AllowAny])
-def login_view(request):
-    email = request.data.get('email')
-    password = request.data.get('password')
-
-    user = authenticate(request, username=email, password=password)
-
-    if user is not None:
-        # THE FIX: Before calling login, explicitly set the user's backend attribute.
-        # This tells Django's login function exactly how this user was authenticated.
-        user.backend = 'api.backends.EmailBackend'
-        
-        # Now, use Django's standard, battle-tested login function.
-        login(request, user)
-        return Response({'message': 'Login successful'})
-    else:
-        return Response({'error': 'Invalid credentials'}, status=401)
-
-
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def logout_view(request):
-    logout(request) # Django's built-in logout
-    return JsonResponse({'message': 'Logout successful!'})
 
 
 @api_view(['POST'])

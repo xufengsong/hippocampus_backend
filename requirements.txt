@@ -10,6 +10,9 @@ django-picklefield==3.3
 django-redis==6.0.0
 djangorestframework==3.16.1
 django-storages==1.14.6
+django-allauth==65.13.1
+dj-rest-auth==7.0.1
+djangorestframework-simplejwt==5.5.1
 jieba==0.42.1
 numpy==2.3.3
 ollama==0.6.0

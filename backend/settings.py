@@ -13,6 +13,7 @@ import os
 from dotenv import load_dotenv
 import dj_database_url
 from pathlib import Path
+from datetime import timedelta
 
 load_dotenv()
 
@@ -54,9 +55,24 @@ INSTALLED_APPS = [
     'api.apps.ApiConfig',
     'corsheaders',
     'rest_framework',
+    'rest_framework.authtoken',
+    'rest_framework_simplejwt',  # ADD THIS
+    'rest_framework_simplejwt.token_blacklist',
     'debug_toolbar',
     'storages',
+    # 'payments',
+    'dj_rest_auth',
+    'django.contrib.sites',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'dj_rest_auth.registration',
+    'allauth.socialaccount.providers.google',
+    'allauth.socialaccount.providers.apple',
+    'allauth.socialaccount.providers.kakao',
 ]
+
+SITE_ID = 1
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -76,7 +92,9 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
-    'debug_toolbar.middleware.DebugToolbarMiddleware'
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
+
+    'allauth.account.middleware.AccountMiddleware',
 ]
 
 ROOT_URLCONF = 'backend.urls'
@@ -88,6 +106,7 @@ TEMPLATES = [
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
+                # 'django.template.context_processors.debug', # How do I use this? Can I use this?
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
@@ -96,9 +115,86 @@ TEMPLATES = [
     },
 ]
 
+REST_AUTH = {
+    'LOGIN_SERIALIZER': 'dj_rest_auth.serializers.LoginSerializer',
+    'TOKEN_SERIALIZER': 'dj_rest_auth.serializers.TokenSerializer',
+    'JWT_SERIALIZER': 'dj_rest_auth.serializers.JWTSerializer',
+    'JWT_SERIALIZER_WITH_EXPIRATION': 'dj_rest_auth.serializers.JWTSerializerWithExpiration',
+    'JWT_TOKEN_CLAIMS_SERIALIZER': 'rest_framework_simplejwt.serializers.TokenObtainPairSerializer',
+    'USER_DETAILS_SERIALIZER': 'api.serializers.UserSerializer',
+    'PASSWORD_RESET_SERIALIZER': 'dj_rest_auth.serializers.PasswordResetSerializer',
+    'PASSWORD_RESET_CONFIRM_SERIALIZER': 'dj_rest_auth.serializers.PasswordResetConfirmSerializer',
+    'PASSWORD_CHANGE_SERIALIZER': 'dj_rest_auth.serializers.PasswordChangeSerializer',
+
+    'REGISTER_SERIALIZER': 'api.serializers.RegisterSerializer',
+
+    'REGISTER_PERMISSION_CLASSES': ('rest_framework.permissions.AllowAny',),
+
+    'TOKEN_MODEL': 'rest_framework.authtoken.models.Token',
+    'TOKEN_CREATOR': 'dj_rest_auth.utils.default_create_token',
+
+    'PASSWORD_RESET_USE_SITES_DOMAIN': False,
+    'OLD_PASSWORD_FIELD_ENABLED': True,
+    'LOGOUT_ON_PASSWORD_CHANGE': False,
+    'SESSION_LOGIN': False, 
+    'USE_JWT': True,  # True in the demo project
+
+    'JWT_AUTH_COOKIE': None,  # 'auth' in the demo project
+    'JWT_AUTH_REFRESH_COOKIE': None,
+    'JWT_AUTH_REFRESH_COOKIE_PATH': '/',
+    'JWT_AUTH_SECURE': not DEBUG,
+    'JWT_AUTH_HTTPONLY': False,  # False in the demo project
+    'JWT_AUTH_SAMESITE': 'Lax',  # or 'None' for cross-site in production
+    'JWT_AUTH_RETURN_EXPIRATION': True,
+    'JWT_AUTH_COOKIE_USE_CSRF': False,  # Set to True if you want CSRF protection
+    'JWT_AUTH_COOKIE_ENFORCE_CSRF_ON_UNAUTHENTICATED': False,
+}
+
+SIMPLE_JWT = {
+    # Token lifetimes
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),  # Short-lived
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),  # Long-lived
+    
+    # Rotation settings (more secure)
+    'ROTATE_REFRESH_TOKENS': True,  # Generate new refresh token on refresh
+    'BLACKLIST_AFTER_ROTATION': True,  # Invalidate old refresh tokens
+    'UPDATE_LAST_LOGIN': True,  # Update user's last_login field
+    
+    # Token claims
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'VERIFYING_KEY': None,
+    'AUDIENCE': None,
+    'ISSUER': None,
+    
+    # Token format
+    'AUTH_HEADER_TYPES': ('Bearer',),  # Authorization: Bearer <token>
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+    
+    # Token classes
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'TOKEN_TYPE_CLAIM': 'token_type',
+    'TOKEN_USER_CLASS': 'rest_framework_simplejwt.models.TokenUser',
+    
+    # Sliding tokens (alternative to access/refresh pair)
+    'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
+    'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
+    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
+}
 
 
+ACCOUNT_AUTHENTICATION_METHOD = 'email'  # Login with email, not username
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_EMAIL_VERIFICATION = 'optional'  # or 'mandatory'
+ACCOUNT_ADAPTER = 'api.adapters.CustomAccountAdapter'  # You'll create this
+
+
+WSGI_APPLICATION = 'backend.wsgi.application'
 ASGI_APPLICATION = 'backend.asgi.application'
+
 
 REDIS_URL = os.environ.get('REDIS_CHANNEL_URL')
 
@@ -122,13 +218,6 @@ else:
             },
         },
     }
-
-
-
-
-
-
-WSGI_APPLICATION = 'backend.wsgi.application'
 
 
 # Database
@@ -217,6 +306,7 @@ AUTH_PASSWORD_VALIDATORS = [
 AUTHENTICATION_BACKENDS = [
     'api.backends.EmailBackend',
     'django.contrib.auth.backends.ModelBackend', # Keep the default backend for admin login
+    'allauth.account.auth_backends.AuthenticationBackend',
 ]
 
 # Internationalization
@@ -319,10 +409,10 @@ CSRF_COOKIE_SECURE = not DEBUG  # false in development
 SESSION_COOKIE_SECURE = not DEBUG  # false in development 
 # When you go to production (HTTPS), you should set these back to True.
 
-# Add these new lines:
-SESSION_COOKIE_DOMAIN = None
-SESSION_COOKIE_NAME = 'sessionid'
-SESSION_SAVE_EVERY_REQUEST = True
+# # Add these new lines:
+# SESSION_COOKIE_DOMAIN = None
+# SESSION_COOKIE_NAME = 'sessionid'
+# SESSION_SAVE_EVERY_REQUEST = True
 
 # Add this entire block
 REST_FRAMEWORK = {
@@ -330,7 +420,8 @@ REST_FRAMEWORK = {
         # This is the key. It enables session-based authentication, which
         # is what you are using. It correctly handles CSRF for POST/PUT/DELETE
         # requests while allowing safe GET requests.
-        'rest_framework.authentication.SessionAuthentication',
+        # 'rest_framework.authentication.SessionAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication'
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         # This sets a sensible default: all API endpoints require the
